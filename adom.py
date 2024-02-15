@@ -68,7 +68,7 @@ def main():
     
     try:
         master_fd, slave_fd = pty.openpty()
-        set_window_size(master_fd, 25, 80)  # Restored screen dimensions initialization
+        set_window_size(master_fd, 25, 80)
 
         tty.setraw(sys.stdin.fileno())
 
