@@ -6,23 +6,17 @@ RUN echo "deb http://archive.debian.org/debian/ stretch main contrib non-free"  
 
 ENV TERM xterm-256color
 
-RUN useradd -m adom
-WORKDIR /home/adom
-VOLUME /home/adom/.adom.data
-
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        curl \
-        libncurses5 \
-        tar \
-    && curl -sSk https://www.adom.de/home/download/current/adom_linux_debian_64_3.3.3.tar.gz \
-        | tar -xz --strip-components 1 \
-    && savedPackages="libncurses5" \
-    && apt-mark auto '.*' > /dev/null \
-    && apt-mark manual $savedPackages \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && apt-get install -y --no-install-recommends curl libncurses5 tar ca-certificates \
+    && cd /usr/bin && \
+    curl -sS https://www.adom.de/home/download/current/adom_linux_debian_64_3.3.3.tar.gz | tar -xz --strip-components 1 adom/adom \
     && rm -rf /var/cache/apt/* /var/lib/apt/lists/*
 
-USER adom
+COPY --chmod=755 adom.py /usr/bin/adom.py
 
-ENTRYPOINT ["./adom"]
+RUN useradd -m adom -d /adom
+VOLUME /adom/.adom.data
+USER adom
+WORKDIR /adom
+
+CMD [ "/usr/bin/adom.py" ]
