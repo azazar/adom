@@ -1,0 +1,5 @@
+#!/bin/bash
+
+podman build -t adom .
+
+exec podman run --userns keep-id --name adom -it -v ./adom_data:/adom/.adom.data ./adom_backup:/adom/.adompy.data adom

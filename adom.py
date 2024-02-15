@@ -54,12 +54,12 @@ def prepare_game(backup_dir_base, saved_games_dir, choice, saved_games):
 
 def main():
     adom_path = os.getenv('ADOM_PATH')
-    saved_games_dir = 'adom_data/savedg'
-    backup_dir_base = 'adom_backup'
+    home_dir = os.getenv('HOME')
+    saved_games_dir = os.path.join(home_dir, '.adom.data/savedg')
+    backup_dir_base = os.path.join(home_dir, '.adompy.data')
     
     if not adom_path:
-        print("Please set the ADOM_PATH environment variable.")
-        sys.exit(1)
+        adom_path = 'adom'
 
     choice, saved_games = display_menu_and_get_choice(backup_dir_base)
     game_name_to_load = prepare_game(backup_dir_base, saved_games_dir, choice, saved_games)
