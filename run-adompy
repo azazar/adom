@@ -2,4 +2,6 @@
 
 podman build -t adom .
 
-exec podman run --userns keep-id --name adom -it -v ./adom_data:/adom/.adom.data ./adom_backup:/adom/.adompy.data adom
+mkdir -p adom_data adom_backup
+
+exec podman run --userns keep-id --rm -it -v ./adom_data:/adom/.adom.data -v ./adom_backup:/adom/.adompy.data adom adom.py
