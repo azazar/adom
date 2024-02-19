@@ -1,7 +1,9 @@
 #!/bin/bash
 
-podman build -t adom .
+tag=adom
+
+docker images -f reference="$tag" || podman build -t $tag .
 
 mkdir -p adom_data
 
-exec podman run --userns keep-id --rm -it -v ./adom_data:/adom/.adom.data adom adom "$@"
+exec podman run --userns keep-id --rm -it -v ./adom_data:/adom/.adom.data $tag adom "$@"
