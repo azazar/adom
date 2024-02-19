@@ -96,6 +96,9 @@ def main():
             # Trim the entire string
             trimmed_output = stripped_output.strip()
             logging.info(f"Callback called with output: {ascii(trimmed_output)}")
+            # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
+            if trimmed_output.endswith("--- Play the Game --- Credits ---"):
+                os.write(master_fd, b'P')
 
         while adom_proc.poll() is None:
             r, w, e = select.select([master_fd, sys.stdin], [], [], SELECT_TIMEOUT)
