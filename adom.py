@@ -101,8 +101,10 @@ def main():
                 os.write(master_fd, b'P')
             # Extract exit key code and send it when the string starts with "--------------------------------- ADOM @ Steam ---------------------------------ADOM Deluxe is available at Steam" and ends with "-------------- [+-] Page up/down -- [*_] Line up/down -- [c] Exit -------------"
             # Use a more concise regular expression to extract the exit key code
-            if trimmed_output.startswith("--------------------------------- ADOM @ Steam ---------------------------------ADOM Deluxe is available at Steam") and trimmed_output.endswith("-------------- [+-] Page up/down -- [*_] Line up/down -- [a] Exit -------------"):
-                exit_key_code = re.search(r'\[(\w)\] Exit', trimmed_output).group(1)
+            # Extract exit key code and send it when the string contains "-------------- [+-] Page up/down -- [*_] Line up/down -- [a] Exit -------------"
+            exit_key_match = re.search(r'-------------- \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -------------', trimmed_output)
+            if exit_key_match:
+                exit_key_code = exit_key_match.group(1)
                 os.write(master_fd, exit_key_code.encode())
 
         while adom_proc.poll() is None:
