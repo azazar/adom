@@ -57,6 +57,9 @@ def main():
     home_dir = os.getenv('HOME')
     saved_games_dir = os.path.join(home_dir, '.adom.data/savedg')
     backup_dir_base = os.path.join(home_dir, '.adompy.data')
+
+    # Create the backup directory if it does not exist
+    os.makedirs(backup_dir_base, exist_ok=True)
     
     if not adom_path:
         adom_path = 'adom'
