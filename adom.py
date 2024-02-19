@@ -88,7 +88,7 @@ def main():
 
         def callback(output):
             """Callback function to be called when the timeout happens."""
-            logging.info(f"Callback called with output: {output}")
+            logging.info(f"Callback called with output: {ascii(output)}")
 
         while adom_proc.poll() is None:
             r, w, e = select.select([master_fd, sys.stdin], [], [], 0.1)
