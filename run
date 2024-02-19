@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOME=$(pwd)
-ADOM_PATH=$(pwd)/run-adom
+export ADOM_HOME=$(pwd)
+export ADOM_PATH=$(pwd)/run-adom
 
 exec python3 adom.py

@@ -2,7 +2,7 @@
 
 tag=adom
 
-docker images -f reference="$tag" || podman build -t $tag .
+podman images -f reference="$tag" || podman build -t $tag .
 
 mkdir -p .adom_data
 
