@@ -93,7 +93,9 @@ def main():
             # Strip ANSI sequences and "\x1b(B" sequences from the output
             ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x1b\(B')
             stripped_output = ansi_escape.sub('', output)
-            logging.info(f"Callback called with output: {ascii(stripped_output)}")
+            # Trim the entire string
+            trimmed_output = stripped_output.strip()
+            logging.info(f"Callback called with output: {ascii(trimmed_output)}")
 
         while adom_proc.poll() is None:
             r, w, e = select.select([master_fd, sys.stdin], [], [], SELECT_TIMEOUT)
