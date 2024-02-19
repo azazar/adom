@@ -90,8 +90,8 @@ def main():
 
         def callback(output):
             """Callback function to be called when the timeout happens."""
-            # Strip ANSI sequences and "\x1b(B" sequences from the output
-            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x1b\(B')
+            # Strip ANSI sequences and "\x1b(B" sequences from the output using a more concise regular expression
+            ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]|\x1b\(B')
             stripped_output = ansi_escape.sub('', output)
             # Trim the entire string
             trimmed_output = stripped_output.strip()
@@ -100,8 +100,9 @@ def main():
             if trimmed_output.endswith("--- Play the Game --- Credits ---"):
                 os.write(master_fd, b'P')
             # Extract exit key code and send it when the string starts with "--------------------------------- ADOM @ Steam ---------------------------------ADOM Deluxe is available at Steam" and ends with "-------------- [+-] Page up/down -- [*_] Line up/down -- [c] Exit -------------"
+            # Use a more concise regular expression to extract the exit key code
             if trimmed_output.startswith("--------------------------------- ADOM @ Steam ---------------------------------ADOM Deluxe is available at Steam") and trimmed_output.endswith("-------------- [+-] Page up/down -- [*_] Line up/down -- [a] Exit -------------"):
-                exit_key_code = re.search(r'\[(.)\] Exit', trimmed_output).group(1)
+                exit_key_code = re.search(r'\[(\w)\] Exit', trimmed_output).group(1)
                 os.write(master_fd, exit_key_code.encode())
 
         while adom_proc.poll() is None:
