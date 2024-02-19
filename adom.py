@@ -102,8 +102,8 @@ def main():
                 input = os.read(sys.stdin.fileno(), 1024)
                 os.write(master_fd, input)
 
-            # If the timeout has happened, call the callback function and flush the buffer
-            if time() - last_callback_time > TIMEOUT:
+            # If the timeout has happened and there is output, call the callback function and flush the buffer
+            if time() - last_callback_time > TIMEOUT and output_buffer:
                 callback(output_buffer)
                 output_buffer = ""
                 last_callback_time = time()
