@@ -90,8 +90,8 @@ def main():
 
         def callback(output):
             """Callback function to be called when the timeout happens."""
-            # Strip ANSI sequences from the output
-            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            # Strip ANSI sequences and "\x1b(B" sequences from the output
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x1b\(B')
             stripped_output = ansi_escape.sub('', output)
             logging.info(f"Callback called with output: {ascii(stripped_output)}")
 
