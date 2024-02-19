@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "env": {
                 "HOME": "${workspaceFolder}",
-                "ADOM_PATH": "${workspaceFolder}/run_adom",
+                "ADOM_PATH": "${workspaceFolder}/run-adom",
             },
         }
     ]

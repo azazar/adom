@@ -1,6 +1,6 @@
 #!/bin/bash
 
 HOME=$(pwd)
-ADOM_PATH=$(pwd)/run_adom
+ADOM_PATH=$(pwd)/run-adom
 
 exec python3 adom.py
