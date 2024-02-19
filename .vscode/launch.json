@@ -11,7 +11,7 @@
             "program": "adom.py",
             "console": "integratedTerminal",
             "env": {
-                "HOME": "${workspaceFolder}",
+                "ADOM_HOME": "${workspaceFolder}",
                 "ADOM_PATH": "${workspaceFolder}/run-adom",
             },
         }
