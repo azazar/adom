@@ -76,7 +76,7 @@ def main():
         tty.setraw(sys.stdin.fileno())
 
         # Launch ADOM with the game name as an argument if loading a game
-        adom_args = [adom_path]
+        adom_args = [adom_path if adom_path else 'adom']
         if game_name_to_load:
             adom_args += ["-l", game_name_to_load]  # Correctly include "-l" argument
         adom_proc = subprocess.Popen(adom_args, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
