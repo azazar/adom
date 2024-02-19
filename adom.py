@@ -54,7 +54,7 @@ def prepare_game(backup_dir_base, saved_games_dir, choice, saved_games):
 
 def main():
     adom_path = os.getenv('ADOM_PATH')
-    home_dir = os.getenv('HOME')
+    home_dir = os.getenv('ADOM_HOME', os.getenv('HOME'))
     saved_games_dir = os.path.join(home_dir, '.adom.data/savedg')
     backup_dir_base = os.path.join(home_dir, '.adompy.data')
 
