@@ -1,4 +1,3 @@
-adom_data
-adom_data~
-adom_backup
+.adom_data
+.adom_data~
 adom_log_20*.log
