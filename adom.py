@@ -12,6 +12,7 @@ import fcntl
 import struct
 import shutil
 from datetime import datetime
+from time import time
 
 # Configure logging with timestamp in the filename
 log_file_path = f'adom_log_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
@@ -52,9 +53,13 @@ def prepare_game(backup_dir_base, saved_games_dir, choice, saved_games):
         return extract_game_name(latest_backup)  # Return the actual game name to load
     return ""  # Return an empty string for a new game
 
+TIMEOUT = 5  # Define a constant for the timeout
+
 def main():
     adom_path = os.getenv('ADOM_PATH')
     home_dir = os.getenv('ADOM_HOME', os.getenv('HOME'))
+    output_buffer = ""  # Create a buffer for the game output
+    last_callback_time = time()  # Initialize the last callback time
     saved_games_dir = os.path.join(home_dir, '.adom.data/savedg')
     backup_dir_base = os.path.join(home_dir, '.adompy.data')
 
@@ -81,15 +86,26 @@ def main():
             adom_args += ["-l", game_name_to_load]  # Correctly include "-l" argument
         adom_proc = subprocess.Popen(adom_args, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
 
+        def callback(output):
+            """Callback function to be called when the timeout happens."""
+            logging.info(f"Callback called with output: {output}")
+
         while adom_proc.poll() is None:
             r, w, e = select.select([master_fd, sys.stdin], [], [], 0.1)
             if master_fd in r:
-                output = os.read(master_fd, 1024)
-                sys.stdout.write(output.decode('utf-8'))
+                output = os.read(master_fd, 1024).decode('utf-8')
+                output_buffer += output  # Buffer the output
+                sys.stdout.write(output)
                 sys.stdout.flush()
             if sys.stdin in r:
                 input = os.read(sys.stdin.fileno(), 1024)
                 os.write(master_fd, input)
+
+            # If the timeout has happened, call the callback function and flush the buffer
+            if time() - last_callback_time > TIMEOUT:
+                callback(output_buffer)
+                output_buffer = ""
+                last_callback_time = time()
     except Exception as e:
         logging.error(f"An error occurred: {e}")
     finally:
