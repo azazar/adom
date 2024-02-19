@@ -11,6 +11,7 @@ import tty
 import fcntl
 import struct
 import shutil
+import re
 from datetime import datetime
 from time import time
 
@@ -89,7 +90,10 @@ def main():
 
         def callback(output):
             """Callback function to be called when the timeout happens."""
-            logging.info(f"Callback called with output: {ascii(output)}")
+            # Strip ANSI sequences from the output
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            stripped_output = ansi_escape.sub('', output)
+            logging.info(f"Callback called with output: {ascii(stripped_output)}")
 
         while adom_proc.poll() is None:
             r, w, e = select.select([master_fd, sys.stdin], [], [], SELECT_TIMEOUT)
