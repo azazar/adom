@@ -53,7 +53,7 @@ def prepare_game(backup_dir_base, saved_games_dir, choice, saved_games):
         return extract_game_name(latest_backup)  # Return the actual game name to load
     return ""  # Return an empty string for a new game
 
-TIMEOUT = 5  # Define a constant for the timeout
+TIMEOUT = 0.05  # Define a constant for the timeout
 
 def main():
     adom_path = os.getenv('ADOM_PATH')
@@ -91,7 +91,7 @@ def main():
             logging.info(f"Callback called with output: {ascii(output)}")
 
         while adom_proc.poll() is None:
-            r, w, e = select.select([master_fd, sys.stdin], [], [], 0.1)
+            r, w, e = select.select([master_fd, sys.stdin], [], [], TIMEOUT)
             if master_fd in r:
                 output = os.read(master_fd, 1024).decode('utf-8')
                 output_buffer += output  # Buffer the output
