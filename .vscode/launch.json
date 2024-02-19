@@ -6,14 +6,14 @@
     "configurations": [
         {
             "name": "Python Debugger: adom.py",
-            "type": "debugpy",
+            "type": "python",
             "request": "launch",
             "program": "adom.py",
             "console": "integratedTerminal",
             "env": {
                 "HOME": "${workspaceFolder}",
                 "ADOM_PATH": "${workspaceFolder}/run_adom",
-            }
+            },
         }
     ]
 }
