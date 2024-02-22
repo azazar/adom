@@ -216,8 +216,7 @@ def main():
                         "You feel cool", "You feel lucky", "You are moved by the sheer pleasure of this sip of fluid",
                         "You feel flexible", "Your digestion calms down", "Your eyes tingle for a second",
                         "You hear a voice calling you 'Iceberg'", "You feel totally awake",
-                        "You feel very controlled", "You suddenly feel like jumping around",
-                        "You feel jumpy", "Your looks improve", "You feel very self-confident",
+                        "You feel very controlled", "Your looks improve", "You feel very self-confident",
                         "Your movements are getting swifter", "You feel studious",
                         "You feel more in touch with the world", "Your senses sharpen",
                         "Your muscles feel stronger", "Your health increases", "Your will seems inflexible",
@@ -225,7 +224,7 @@ def main():
                         "You feel younger!", "You suddenly remember your early youth", 
                         "You feel slightly strengthened", "Your wounds no longer bleed", 
                         "Your blood seems to cool down", "You suddenly are visible again",
-                        "No effect, as far as you notice"
+                        "No effect, as far as you notice", "You feel steady", 
 
                     ]
 
@@ -239,7 +238,7 @@ def main():
                         "You feel inflexible", "You feel gnarly", "Your stomach stings painfully",
                         "Your eyes sting for a second", "You feel shocked", "You feel tired", 
                         "You feel shaken", "You suddenly hate the thought of jumping around", 
-                        "You feel steady", "You are growing a wart", "You feel reserved", "You are getting shaky", 
+                        "You are growing a wart", "You feel reserved", "You are getting shaky", 
                         "Thinking seems to get tougher", "You are getting out of touch with everything", 
                         "You seem to get less perceptive", "Your muscles soften", "It seems that you are getting a cold", 
                         "You feel soft-hearted", "You feel bad about your", 
@@ -250,6 +249,7 @@ def main():
                         "You start a trip on the road to nowhere.", "You feel very very bad.",
                         "You hear hissing sounds", "You suddenly hear many hissing sounds!", 
                         "You suddenly hear roaring waves!", "You feel very bad off.",
+                        "You suddenly feel like jumping around", "You feel jumpy", 
                     ]
 
                     neutral_messages = [
