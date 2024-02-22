@@ -89,6 +89,7 @@ def main():
         'quit_sequence': False,
         'drinking_sequence': False,
         'restart': True,
+        'error': False,
     }
 
     while state['restart']:
@@ -126,12 +127,14 @@ def main():
 
                 # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
                 if trimmed_output.endswith("--- Play the Game --- Credits ---"):
+                    logging.info("Sending 'P' key to start the game")
                     os.write(master_fd, b'P')
                     return
 
                 # Close the game ad on start
                 exit_key_match = re.search(r'-+ \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -+', trimmed_output)
                 if exit_key_match:
+                    logging.info(f"Sending '{exit_key_match.group(1)}' key to close the ad on start")
                     exit_key_code = exit_key_match.group(1)
                     os.write(master_fd, exit_key_code.encode())
                     return
@@ -139,18 +142,23 @@ def main():
                 # Start save game process
                 save_game_match = re.search(r'-+Really save the game\? \[y\/N\]', trimmed_output)
                 if save_game_match:
+                    logging.info("Sending 'y' key to save the game")
                     os.write(master_fd, b'y')
                     state['save_sequence'] = True
                     return
                 
                 if state['save_sequence']:
+                    logging.info("Checking for save game messages")
+                    
                     press_space_match = re.search(r'\[Press SPACE to continue\]', trimmed_output)
                     if press_space_match:
+                        logging.info("Sending ' ' key to continue")
                         os.write(master_fd, b' ')
                         return
 
                     quit_game_match = re.search(r'\[c\] read the credits or\[q\] quit the game\?Your choice:', trimmed_output)
                     if quit_game_match:
+                        logging.info("Sending 'q' key to quit the game")
                         os.write(master_fd, b'q')
                         state['save_sequence'] = False
                         return
@@ -160,20 +168,25 @@ def main():
                 # Message: "Really quit the game? [y/N]"
                 quit_game_match = re.search(r'Really quit the game\? \[y\/N\]', trimmed_output)
                 if quit_game_match:
+                    logging.info("Sending 'y' key to quit the game")
                     os.write(master_fd, b'y')
                     state['quit_sequence'] = True
                     return
             
                 if state['quit_sequence']:
+                    logging.info("Checking for quit game messages")
+
                     # Message: "-- [Zz ] Exit ############\r(more)"
                     exit_game_match = re.search(r'-- \[Zz \] Exit #+', trimmed_output)
                     if exit_game_match:
+                        logging.info("Sending 'Z' key to close the screen")
                         os.write(master_fd, b'Z')
                         return
                 
                     # Message: "[e] exit to the main menu or  [q] quit the game?  Your choice:'"
                     exit_game_match = re.search(r'\[e\] exit to the main menu or  \[q\] quit the game\?  Your choice:', trimmed_output)
                     if exit_game_match:
+                        logging.info("Sending 'q' key to quit the game")
                         os.write(master_fd, b'q')
                         state['quit_sequence'] = False
                         return
@@ -182,17 +195,21 @@ def main():
                     # Some blocking message with "more" "You sense a certain tension.(more)"
                     more_match = re.search(r'\(more\)', trimmed_output)
                     if more_match:
+                        logging.info("Sending ' ' key to continue")
                         os.write(master_fd, b' ')
                         return
                 
                 # Message: "-Do you want to drink from the pool? [Y/n]"
                 drink_pool_match = re.search(r'-+Do you want to drink from the pool\? \[Y\/n\]', trimmed_output)
                 if drink_pool_match and game_name_to_load:
+                    logging.info("Sending 'Y' key to drink from the pool")
                     os.write(master_fd, b'Y')
                     state['drinking_sequence'] = True
                     return
                 
                 if state['drinking_sequence']:
+                    logging.info("Checking for drinking messages")
+
                     good_messages = [
                         "You swallow hard", "You feel hot-headed", "You sense trouble",
                         "You feel bold at the thought of danger", "You feel very lucky",
@@ -232,7 +249,7 @@ def main():
                         "Suddenly your ears start to bleed!", "The water is suddenly writhing with snakes!",
                         "You start a trip on the road to nowhere.", "You feel very very bad.",
                         "You hear hissing sounds", "You suddenly hear many hissing sounds!", 
-                        "You suddenly hear roaring waves!", 
+                        "You suddenly hear roaring waves!", "You feel very bad off.",
                     ]
 
                     neutral_messages = [
@@ -246,7 +263,7 @@ def main():
                     # Check if trimmed_output contains any of the bad messages
                     for message in bad_messages:
                         if message in trimmed_output:
-                            os.write(master_fd, b'\nQY')
+                            os.write(master_fd, b'\nQ')
                             state['drinking_sequence'] = False
                             state['quit_sequence'] = True
                             state['restart'] = True
@@ -255,7 +272,7 @@ def main():
                     # Check if trimmed_output contains any of the good messages
                     for message in good_messages:
                         if message in trimmed_output:
-                            os.write(master_fd, b'\nSy')
+                            os.write(master_fd, b'\nS')
                             state['drinking_sequence'] = False
                             state['save_sequence'] = True
                             state['restart'] = True
@@ -290,8 +307,9 @@ def main():
                     output_buffer = ""
                     last_callback_time = time()
 
-            # Delete log file
-            os.remove(log_file_path)
+            # Backup the game file after quitting
+            if game_name_to_load:
+                shutil.copyfile(os.path.join(saved_games_dir, game_filename), os.path.join(backup_dir_base, game_filename))
 
         except Exception as e:
             logging.error(f"An error occurred: {e}")
@@ -299,11 +317,15 @@ def main():
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
             traceback.print_exc()
 
-            state['restart'] = False
+            state['error'] = True
         finally:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
             os.close(master_fd)
             os.close(slave_fd)
+
+    if not state['error']:
+        # Delete log file
+        os.remove(log_file_path)
 
 if __name__ == "__main__":
     main()
