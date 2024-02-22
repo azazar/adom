@@ -78,7 +78,7 @@ def curses_menu(win, backup_dir_base, saved_games_dir):
         elif key in (curses.KEY_ENTER, ord('\n'), ord('\r')):
             break
         elif key == curses.KEY_EXIT or key == 27 or key == ord('q'):
-            return os._exit(0)
+            return False, False
         elif key == ord('0'):
             return None, None
 
@@ -118,6 +118,9 @@ def main():
         adom_path = 'adom'
 
     game_name_to_load, game_filename = display_menu_and_get_choice(backup_dir_base, saved_games_dir)
+
+    if game_name_to_load is False:
+        return
 
     old_settings = termios.tcgetattr(sys.stdin)
     
