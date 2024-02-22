@@ -31,28 +31,29 @@ def extract_game_name(file_path):
         game_name = file.read(12).split(b'\x00', 1)[0].decode('utf-8')  # Read the name and split by null terminator
     return game_name
 
-def display_menu_and_get_choice(backup_dir_base):
+def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
     """Display a menu of saved games and return the user's choice."""
     print("Select a game to load:")
-    saved_games = [f for f in os.listdir(backup_dir_base) if os.path.isdir(os.path.join(backup_dir_base, f))]
+    saved_games = [f for f in os.listdir(saved_games_dir) if os.path.isfile(os.path.join(saved_games_dir, f))]
+
+    if os.path.isdir(backup_dir_base):
+        for game in os.listdir(backup_dir_base):
+            if game not in saved_games:
+                saved_games.append(game)
+                shutil.copyfile(os.path.join(backup_dir_base, game), os.path.join(saved_games_dir, game))
+
     for index, game in enumerate(saved_games, start=1):
         print(f"{index}. Load game: {game}")
     print("0. Start a new game")
     
     choice = int(input("Enter your choice: "))
-    return choice, saved_games
 
-def prepare_game(backup_dir_base, saved_games_dir, choice, saved_games):
-    """Prepare the game for launching, either by copying a saved game or doing nothing for a new game."""
-    if choice > 0:
-        game_to_load = saved_games[choice - 1]
-        game_backup_dir = os.path.join(backup_dir_base, game_to_load)
-        # Find the latest backup file for the selected game
-        latest_backup = max([os.path.join(game_backup_dir, f) for f in os.listdir(game_backup_dir)], key=os.path.getmtime)
-        # Copy the selected game back to the ADOM saved games directory
-        shutil.copy2(latest_backup, os.path.join(saved_games_dir, os.path.basename(latest_backup)))
-        return extract_game_name(latest_backup)  # Return the actual game name to load
-    return ""  # Return an empty string for a new game
+    if choice == 0:
+        return None
+
+    filename = saved_games[choice - 1]
+
+    return extract_game_name(os.path.join(saved_games_dir, filename)), filename
 
 TIMEOUT = 0.05  # Define a constant for the user input timeout
 SELECT_TIMEOUT = 0.1  # Define a constant for the select timeout
@@ -71,8 +72,7 @@ def main():
     if not adom_path:
         adom_path = 'adom'
 
-    choice, saved_games = display_menu_and_get_choice(backup_dir_base)
-    game_name_to_load = prepare_game(backup_dir_base, saved_games_dir, choice, saved_games)
+    game_name_to_load, game_filename = display_menu_and_get_choice(backup_dir_base, saved_games_dir)
 
     old_settings = termios.tcgetattr(sys.stdin)
     
@@ -86,6 +86,10 @@ def main():
         adom_args = [adom_path if adom_path else 'adom']
         if game_name_to_load:
             adom_args += ["-l", game_name_to_load]  # Correctly include "-l" argument
+
+            # Backup the game file before loading it
+            shutil.copyfile(os.path.join(saved_games_dir, game_filename), os.path.join(backup_dir_base, game_filename))
+
         adom_proc = subprocess.Popen(adom_args, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
 
         def callback(output):
