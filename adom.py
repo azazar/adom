@@ -211,7 +211,7 @@ def main():
                     logging.info("Checking for drinking messages")
 
                     good_messages = [
-                        "You swallow hard", "You feel hot-headed", "You sense trouble",
+                        "You swallow hard", "You feel hot-headed",
                         "You feel bold at the thought of danger", "You feel very lucky",
                         "You feel cool", "You feel lucky", "You are moved by the sheer pleasure of this sip of fluid",
                         "You feel flexible", "Your digestion calms down", "Your eyes tingle for a second",
@@ -249,7 +249,7 @@ def main():
                         "You start a trip on the road to nowhere.", "You feel very very bad.",
                         "You hear hissing sounds", "You suddenly hear many hissing sounds!", 
                         "You suddenly hear roaring waves!", "You feel very bad off.",
-                        "You suddenly feel like jumping around", "You feel jumpy", 
+                        "You suddenly feel like jumping around", "You feel jumpy",  "You sense trouble",
                     ]
 
                     neutral_messages = [
