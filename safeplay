@@ -4,21 +4,21 @@ game=Kolhoznik
 
 set -ex
 
-mkdir -p adom_data
+mkdir -p .adom.data
 
 while :; do
     ./adom -l "$game" || exit 1
 
-    if test -e adom_data/savedg/*.svg; then
+    if test -e .adom.data/savedg/*.svg; then
         break
     fi
 
-    if test -e adom_data~; then
-        rm -rf adom_data
-        cp -r adom_data~ adom_data
+    if test -e .adom.data~; then
+        rm -rf .adom.data
+        cp -r .adom.data~ .adom.data
     fi
 done
 
-rm -rf adom_data~~
-mv adom_data~ adom_data~~
-cp -r adom_data adom_data~
+rm -rf .adom.data~~
+mv .adom.data~ .adom.data~~
+cp -r .adom.data .adom.data~
