@@ -15,6 +15,7 @@ import re
 from datetime import datetime
 from time import time
 import traceback
+import curses
 
 # Configure logging with timestamp in the filename
 log_file_path = f'adom_log_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
@@ -51,33 +52,53 @@ def list_saved_games(backup_dir_base, saved_games_dir):
 
     return saved_games
 
-
-def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
-    """Display a menu of saved games and return the user's choice."""
-    print("Select a game to load:")
-
+def curses_menu(win, backup_dir_base, saved_games_dir):
+    curses.curs_set(0)  # Hide the cursor
     saved_games = list_saved_games(backup_dir_base, saved_games_dir)
+    current_selection = 0
+    while True:
+        win.clear()
+        win.addstr("Select a game to load:\n\n")
+        for index, game in enumerate(saved_games):
+            if index == current_selection:
+                win.addstr(f"{index + 1}. Load game: {game}\n", curses.A_REVERSE)
+            else:
+                win.addstr(f"{index + 1}. Load game: {game}\n")
+        if current_selection == len(saved_games):
+            win.addstr(f"0. Start a new game\n", curses.A_REVERSE)
+        else:
+            win.addstr(f"0. Start a new game\n")
+        win.refresh()
 
-    for index, game in enumerate(saved_games, start=1):
-        print(f"{index}. Load game: {game}")
-    print("0. Start a new game")
-    
-    choice_str = input("Enter your choice: ")
-    if choice_str == "":
-        choice = 1 if len(saved_games) > 0 else 0
-    else:
-        choice = int(choice_str)
+        key = win.getch()
+        if key == curses.KEY_UP and current_selection > 0:
+            current_selection -= 1
+        elif key == curses.KEY_DOWN and current_selection < len(saved_games):
+            current_selection += 1
+        elif key in (curses.KEY_ENTER, ord('\n'), ord('\r')):
+            break
+        elif key == curses.KEY_EXIT or key == 27 or key == ord('q'):
+            return os._exit(0)
+        elif key == ord('0'):
+            return None, None
 
-    if choice == 0:
+    if current_selection >= len(saved_games):
         return None, None
 
-    filename = saved_games[choice - 1]
+    filename = saved_games[current_selection]
     filepath = os.path.join(saved_games_dir, filename)
 
     if not os.path.isfile(filepath):
         filepath = os.path.join(backup_dir_base, filename)
 
     return extract_game_name(filepath), filename
+
+def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
+    """Wrap curses application to display a menu of saved games and return the user's choice."""
+    def curses_wrapper(stdscr):
+        return curses_menu(stdscr, backup_dir_base, saved_games_dir)
+
+    return curses.wrapper(curses_wrapper)
 
 TIMEOUT = 0.05  # Define a constant for the user input timeout
 SELECT_TIMEOUT = 0.1  # Define a constant for the select timeout
