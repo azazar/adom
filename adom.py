@@ -190,6 +190,9 @@ def main():
                 output_buffer = ""
                 last_callback_time = time()
 
+        # Delete log file
+        os.remove(log_file_path)
+
     except Exception as e:
         logging.error(f"An error occurred: {e}")
 
