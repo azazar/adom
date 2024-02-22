@@ -207,7 +207,9 @@ def main():
                         "You feel great about your <STAT> potential", "You feel much better",
                         "You feel younger!", "You suddenly remember your early youth", 
                         "You feel slightly strengthened", "Your wounds no longer bleed", 
-                        "Your blood seems to cool down"
+                        "Your blood seems to cool down", "You suddenly are visible again",
+                        "No effect, as far as you notice"
+
                     ]
 
                     bad_messages = [
@@ -229,14 +231,14 @@ def main():
                         "You are hit by lots of water.", "You slip and fall in!", "Suddenly a water elemental rises from the pool!",
                         "Suddenly your ears start to bleed!", "The water is suddenly writhing with snakes!",
                         "You start a trip on the road to nowhere.", "You feel very very bad.",
+                        "You hear hissing sounds", "You suddenly hear many hissing sounds!", 
+                        "You suddenly hear roaring waves!", 
                     ]
 
                     neutral_messages = [
                         "Nothing happens.", "The pool bubbles", "Great! Pure dwarven ale!", "Wow! Pure beer!",
                         "The liquid tastes bitter.", "While you drink small waves seem to ripple the otherwise calm surface of the pool.",
-                        "You hear hissing sounds", "You suddenly hear many hissing sounds!", 
-                        "You suddenly hear roaring waves!", "Your outfit suddenly looks much cleaner", 
-                        "You suddenly are visible again"
+                        "Your outfit suddenly looks much cleaner", 
                     ]
 
                     wish_message = "What do you wish for?"
