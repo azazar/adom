@@ -34,7 +34,7 @@ def extract_game_name(file_path):
 def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
     """Display a menu of saved games and return the user's choice."""
     print("Select a game to load:")
-    saved_games = [f for f in os.listdir(saved_games_dir) if os.path.isfile(os.path.join(saved_games_dir, f))]
+    saved_games = [f for f in os.listdir(saved_games_dir) if os.path.isfile(os.path.join(saved_games_dir, f)) and f.endswith('.svg')]
 
     if os.path.isdir(backup_dir_base):
         for game in os.listdir(backup_dir_base):
