@@ -41,7 +41,6 @@ def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
         for game in os.listdir(backup_dir_base):
             if game not in saved_games:
                 saved_games.append(game)
-                shutil.copyfile(os.path.join(backup_dir_base, game), os.path.join(saved_games_dir, game))
 
     for index, game in enumerate(saved_games, start=1):
         print(f"{index}. Load game: {game}")
@@ -57,8 +56,12 @@ def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
         return None
 
     filename = saved_games[choice - 1]
+    filepath = os.path.join(saved_games_dir, filename)
 
-    return extract_game_name(os.path.join(saved_games_dir, filename)), filename
+    if not os.path.isfile(filepath):
+        filepath = os.path.join(backup_dir_base, filename)
+
+    return extract_game_name(filepath), filename
 
 TIMEOUT = 0.05  # Define a constant for the user input timeout
 SELECT_TIMEOUT = 0.1  # Define a constant for the select timeout
@@ -81,127 +84,224 @@ def main():
 
     old_settings = termios.tcgetattr(sys.stdin)
     
-    try:
-        master_fd, slave_fd = pty.openpty()
+    state = {
+        'save_sequence': False,
+        'quit_sequence': False,
+        'drinking_sequence': False,
+        'restart': True,
+    }
 
-        set_window_size(master_fd, 25, 80)
+    while state['restart']:
+        state['restart'] = False
 
-        tty.setraw(sys.stdin.fileno())
+        # Restore game file from backup if it's not in the saved games directory
+        if game_name_to_load and game_filename not in os.listdir(saved_games_dir):
+            shutil.copyfile(os.path.join(backup_dir_base, game_filename), os.path.join(saved_games_dir, game_filename))
 
-        # Launch ADOM with the game name as an argument if loading a game
-        adom_args = [adom_path if adom_path else 'adom']
-        if game_name_to_load:
-            adom_args += ["-l", game_name_to_load]  # Correctly include "-l" argument
+        try:
+            master_fd, slave_fd = pty.openpty()
 
-            # Backup the game file before loading it
-            shutil.copyfile(os.path.join(saved_games_dir, game_filename), os.path.join(backup_dir_base, game_filename))
+            set_window_size(master_fd, 25, 80)
 
-        state = {
-            'save_sequence': False,
-            'quit_sequence': False,
-        }
+            tty.setraw(sys.stdin.fileno())
 
-        adom_proc = subprocess.Popen(adom_args, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
+            # Launch ADOM with the game name as an argument if loading a game
+            adom_args = [adom_path if adom_path else 'adom']
+            if game_name_to_load:
+                adom_args += ["-l", game_name_to_load]  # Correctly include "-l" argument
 
-        def callback(output, state):
-            """Callback function to be called when the timeout happens."""
-            # Strip ANSI sequences and "\x1b(B" sequences from the output using a more concise regular expression
-            ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]|\x1b\(B')
-            stripped_output = ansi_escape.sub('', output)
-            # Trim the entire string
-            trimmed_output = stripped_output.strip()
-            logging.info(f"Callback called with output: {ascii(trimmed_output)}")
+                # Backup the game file before loading it
+                shutil.copyfile(os.path.join(saved_games_dir, game_filename), os.path.join(backup_dir_base, game_filename))
 
-            # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
-            if trimmed_output.endswith("--- Play the Game --- Credits ---"):
-                os.write(master_fd, b'P')
-                return
+            adom_proc = subprocess.Popen(adom_args, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
 
-            # Close the game ad on start
-            exit_key_match = re.search(r'-+ \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -+', trimmed_output)
-            if exit_key_match:
-                exit_key_code = exit_key_match.group(1)
-                os.write(master_fd, exit_key_code.encode())
-                return
+            def callback(output, state):
+                """Callback function to be called when the timeout happens."""
+                # Strip ANSI sequences and "\x1b(B" sequences from the output using a more concise regular expression
+                ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]|\x1b\(B')
+                stripped_output = ansi_escape.sub('', output)
+                # Trim the entire string
+                trimmed_output = stripped_output.strip()
+                logging.info(f"Callback called with output: {ascii(trimmed_output)}")
 
-            # Start save game process
-            save_game_match = re.search(r'-+Really save the game\? \[y\/N\]', trimmed_output)
-            if save_game_match:
-                os.write(master_fd, b'y')
-                state['save_sequence'] = True
-                return
-            
-            if state['save_sequence']:
-                press_space_match = re.search(r'\[Press SPACE to continue\]', trimmed_output)
-                if press_space_match:
-                    os.write(master_fd, b' ')
+                # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
+                if trimmed_output.endswith("--- Play the Game --- Credits ---"):
+                    os.write(master_fd, b'P')
                     return
 
-                quit_game_match = re.search(r'\[c\] read the credits or\[q\] quit the game\?Your choice:', trimmed_output)
+                # Close the game ad on start
+                exit_key_match = re.search(r'-+ \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -+', trimmed_output)
+                if exit_key_match:
+                    exit_key_code = exit_key_match.group(1)
+                    os.write(master_fd, exit_key_code.encode())
+                    return
+
+                # Start save game process
+                save_game_match = re.search(r'-+Really save the game\? \[y\/N\]', trimmed_output)
+                if save_game_match:
+                    os.write(master_fd, b'y')
+                    state['save_sequence'] = True
+                    return
+                
+                if state['save_sequence']:
+                    press_space_match = re.search(r'\[Press SPACE to continue\]', trimmed_output)
+                    if press_space_match:
+                        os.write(master_fd, b' ')
+                        return
+
+                    quit_game_match = re.search(r'\[c\] read the credits or\[q\] quit the game\?Your choice:', trimmed_output)
+                    if quit_game_match:
+                        os.write(master_fd, b'q')
+                        state['save_sequence'] = False
+                        return
+
+                    return
+
+                # Message: "Really quit the game? [y/N]"
+                quit_game_match = re.search(r'Really quit the game\? \[y\/N\]', trimmed_output)
                 if quit_game_match:
-                    os.write(master_fd, b'q')
-                    state['save_sequence'] = False
-                    return
-
-                return
-
-            # Message: "Really quit the game? [y/N]"
-            quit_game_match = re.search(r'Really quit the game\? \[y\/N\]', trimmed_output)
-            if quit_game_match:
-                os.write(master_fd, b'y')
-                state['quit_sequence'] = True
-                return
-        
-            if state['quit_sequence']:
-                # Message: "-- [Zz ] Exit ############\r(more)"
-                exit_game_match = re.search(r'-- \[Zz \] Exit #+', trimmed_output)
-                if exit_game_match:
-                    os.write(master_fd, b'Z')
+                    os.write(master_fd, b'y')
+                    state['quit_sequence'] = True
                     return
             
-                # Message: "[e] exit to the main menu or  [q] quit the game?  Your choice:'"
-                exit_game_match = re.search(r'\[e\] exit to the main menu or  \[q\] quit the game\?  Your choice:', trimmed_output)
-                if exit_game_match:
-                    os.write(master_fd, b'q')
-                    state['quit_sequence'] = False
+                if state['quit_sequence']:
+                    # Message: "-- [Zz ] Exit ############\r(more)"
+                    exit_game_match = re.search(r'-- \[Zz \] Exit #+', trimmed_output)
+                    if exit_game_match:
+                        os.write(master_fd, b'Z')
+                        return
+                
+                    # Message: "[e] exit to the main menu or  [q] quit the game?  Your choice:'"
+                    exit_game_match = re.search(r'\[e\] exit to the main menu or  \[q\] quit the game\?  Your choice:', trimmed_output)
+                    if exit_game_match:
+                        os.write(master_fd, b'q')
+                        state['quit_sequence'] = False
+                        return
+
+                if state['quit_sequence']:
+                    # Some blocking message with "more" "You sense a certain tension.(more)"
+                    more_match = re.search(r'\(more\)', trimmed_output)
+                    if more_match:
+                        os.write(master_fd, b' ')
+                        return
+                
+                # Message: "-Do you want to drink from the pool? [Y/n]"
+                drink_pool_match = re.search(r'-+Do you want to drink from the pool\? \[Y\/n\]', trimmed_output)
+                if drink_pool_match and game_name_to_load:
+                    os.write(master_fd, b'Y')
+                    state['drinking_sequence'] = True
                     return
+                
+                if state['drinking_sequence']:
+                    good_messages = [
+                        "You swallow hard", "You feel hot-headed", "You sense trouble",
+                        "You feel bold at the thought of danger", "You feel very lucky",
+                        "You feel cool", "You feel lucky", "You are moved by the sheer pleasure of this sip of fluid",
+                        "You feel flexible", "Your digestion calms down", "Your eyes tingle for a second",
+                        "You hear a voice calling you 'Iceberg'", "You feel totally awake",
+                        "You feel very controlled", "You suddenly feel like jumping around",
+                        "You feel jumpy", "Your looks improve", "You feel very self-confident",
+                        "Your movements are getting swifter", "You feel studious",
+                        "You feel more in touch with the world", "Your senses sharpen",
+                        "Your muscles feel stronger", "Your health increases", "Your will seems inflexible",
+                        "You feel great about your <STAT> potential", "You feel much better",
+                        "You feel younger!", "You suddenly remember your early youth", 
+                        "You feel slightly strengthened", "Your wounds no longer bleed", 
+                        "Your blood seems to cool down"
+                    ]
 
-            if state['quit_sequence']:
-                # Some blocking message with "more" "You sense a certain tension.(more)"
-                more_match = re.search(r'\(more\)', trimmed_output)
-                if more_match:
-                    os.write(master_fd, b' ')
-                    return
+                    bad_messages = [
+                        "The pool suddenly dries up.", "You taste bitter bile in your mouth", "You shiver",
+                        "You feel relieved", "You feel like an endangered species", "You become depressive",
+                        "You continue the trip on the road to nowhere", "You feel elated", "You sweat",
+                        "Your outfit suddenly looks much cleaner", "You suddenly can see yourself",
+                        "You feel dizzy for some seconds", "Suddenly you are gone", "You feel translucent",
+                        "You feel on air", "You suddenly are visible again", "You feel cheated", 
+                        "You feel inflexible", "You feel gnarly", "Your stomach stings painfully",
+                        "Your eyes sting for a second", "You feel shocked", "You feel tired", 
+                        "You feel shaken", "You suddenly hate the thought of jumping around", 
+                        "You feel steady", "You are growing a wart", "You feel reserved", "You are getting shaky", 
+                        "Thinking seems to get tougher", "You are getting out of touch with everything", 
+                        "You seem to get less perceptive", "Your muscles soften", "It seems that you are getting a cold", 
+                        "You feel soft-hearted", "You feel bad about your <STAT> potential", 
+                        "Bah! This liquid is extremely filthy!", "Urgh! Poison!", "You age!", "You feel exhausted", 
+                        "You feel corrupted!", "A gush of water hits you!", "Lots of vipers burst out of the pool",
+                        "You are hit by lots of water.", "You slip and fall in!", "Suddenly a water elemental rises from the pool!",
+                        "Suddenly your ears start to bleed!", "The water is suddenly writhing with snakes!",
+                        "You start a trip on the road to nowhere.", "You feel very very bad.",
+                    ]
 
-        while adom_proc.poll() is None:
-            r, w, e = select.select([master_fd, sys.stdin], [], [], SELECT_TIMEOUT)
-            if master_fd in r:
-                output = os.read(master_fd, 1024).decode('utf-8')
-                output_buffer += output  # Buffer the output
-                sys.stdout.write(output)
-                sys.stdout.flush()
-            if sys.stdin in r:
-                input = os.read(sys.stdin.fileno(), 1024)
-                os.write(master_fd, input)
+                    neutral_messages = [
+                        "Nothing happens.", "The pool bubbles", "Great! Pure dwarven ale!", "Wow! Pure beer!",
+                        "The liquid tastes bitter.", "While you drink small waves seem to ripple the otherwise calm surface of the pool.",
+                        "You hear hissing sounds", "You suddenly hear many hissing sounds!", 
+                        "You suddenly hear roaring waves!", "Your outfit suddenly looks much cleaner", 
+                        "You suddenly are visible again"
+                    ]
 
-            # If the timeout has happened and there is output, call the callback function and flush the buffer
-            if time() - last_callback_time > TIMEOUT and output_buffer:
-                callback(output_buffer, state)
-                output_buffer = ""
-                last_callback_time = time()
+                    wish_message = "What do you wish for?"
 
-        # Delete log file
-        os.remove(log_file_path)
+                    # Check if trimmed_output contains any of the bad messages
+                    for message in bad_messages:
+                        if message in trimmed_output:
+                            os.write(master_fd, b'\nQY')
+                            state['drinking_sequence'] = False
+                            state['quit_sequence'] = True
+                            state['restart'] = True
+                            return
+                    
+                    # Check if trimmed_output contains any of the good messages
+                    for message in good_messages:
+                        if message in trimmed_output:
+                            os.write(master_fd, b'\nSy')
+                            state['drinking_sequence'] = False
+                            state['save_sequence'] = True
+                            state['restart'] = True
+                            return
+                        
+                    # Check if trimmed_output contains any of the neutral messages
+                    for message in neutral_messages:
+                        if message in trimmed_output:
+                            state['drinking_sequence'] = False
+                            return
 
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
+                    if wish_message in trimmed_output:
+                        state['drinking_sequence'] = False
+                        return
 
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-        traceback.print_exc()
-    finally:
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-        os.close(master_fd)
-        os.close(slave_fd)
+                    state['drinking_sequence'] = False
+
+            while adom_proc.poll() is None:
+                r, w, e = select.select([master_fd, sys.stdin], [], [], SELECT_TIMEOUT)
+                if master_fd in r:
+                    output = os.read(master_fd, 1024).decode('utf-8')
+                    output_buffer += output  # Buffer the output
+                    sys.stdout.write(output)
+                    sys.stdout.flush()
+                if sys.stdin in r:
+                    input = os.read(sys.stdin.fileno(), 1024)
+                    os.write(master_fd, input)
+
+                # If the timeout has happened and there is output, call the callback function and flush the buffer
+                if time() - last_callback_time > TIMEOUT and output_buffer:
+                    callback(output_buffer, state)
+                    output_buffer = ""
+                    last_callback_time = time()
+
+            # Delete log file
+            os.remove(log_file_path)
+
+        except Exception as e:
+            logging.error(f"An error occurred: {e}")
+
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            traceback.print_exc()
+
+            state['restart'] = False
+        finally:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            os.close(master_fd)
+            os.close(slave_fd)
 
 if __name__ == "__main__":
     main()
