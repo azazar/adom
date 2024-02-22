@@ -47,7 +47,11 @@ def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
         print(f"{index}. Load game: {game}")
     print("0. Start a new game")
     
-    choice = int(input("Enter your choice: "))
+    choice_str = input("Enter your choice: ")
+    if choice_str == "":
+        choice = 1
+    else:
+        choice = int(choice_str)
 
     if choice == 0:
         return None
