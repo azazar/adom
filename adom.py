@@ -94,6 +94,7 @@ def main():
 
         state = {
             'save_sequence': False,
+            'quit_sequence': False,
         }
 
         adom_proc = subprocess.Popen(adom_args, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
@@ -136,6 +137,36 @@ def main():
                 if quit_game_match:
                     os.write(master_fd, b'q')
                     state['save_sequence'] = False
+                    return
+
+                return
+
+            # Message: "Really quit the game? [y/N]"
+            quit_game_match = re.search(r'Really quit the game\? \[y\/N\]', trimmed_output)
+            if quit_game_match:
+                os.write(master_fd, b'y')
+                state['quit_sequence'] = True
+                return
+        
+            if state['quit_sequence']:
+                # Message: "-- [Zz ] Exit ############\r(more)"
+                exit_game_match = re.search(r'-- \[Zz \] Exit #+', trimmed_output)
+                if exit_game_match:
+                    os.write(master_fd, b'Z')
+                    return
+            
+                # Message: "[e] exit to the main menu or  [q] quit the game?  Your choice:'"
+                exit_game_match = re.search(r'\[e\] exit to the main menu or  \[q\] quit the game\?  Your choice:', trimmed_output)
+                if exit_game_match:
+                    os.write(master_fd, b'q')
+                    state['quit_sequence'] = False
+                    return
+
+            if state['quit_sequence']:
+                # Some blocking message with "more" "You sense a certain tension.(more)"
+                more_match = re.search(r'\(more\)', trimmed_output)
+                if more_match:
+                    os.write(master_fd, b' ')
                     return
 
         while adom_proc.poll() is None:
