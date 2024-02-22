@@ -14,6 +14,7 @@ import shutil
 import re
 from datetime import datetime
 from time import time
+import traceback
 
 # Configure logging with timestamp in the filename
 log_file_path = f'adom_log_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
@@ -78,6 +79,7 @@ def main():
     
     try:
         master_fd, slave_fd = pty.openpty()
+
         set_window_size(master_fd, 25, 80)
 
         tty.setraw(sys.stdin.fileno())
@@ -90,9 +92,13 @@ def main():
             # Backup the game file before loading it
             shutil.copyfile(os.path.join(saved_games_dir, game_filename), os.path.join(backup_dir_base, game_filename))
 
+        state = {
+            'save_sequence': False,
+        }
+
         adom_proc = subprocess.Popen(adom_args, preexec_fn=os.setsid, stdin=slave_fd, stdout=slave_fd, stderr=slave_fd, close_fds=True)
 
-        def callback(output):
+        def callback(output, state):
             """Callback function to be called when the timeout happens."""
             # Strip ANSI sequences and "\x1b(B" sequences from the output using a more concise regular expression
             ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]|\x1b\(B')
@@ -113,6 +119,25 @@ def main():
                 os.write(master_fd, exit_key_code.encode())
                 return
 
+            # Start save game process
+            save_game_match = re.search(r'-+Really save the game\? \[y\/N\]', trimmed_output)
+            if save_game_match:
+                os.write(master_fd, b'y')
+                state['save_sequence'] = True
+                return
+            
+            if state['save_sequence']:
+                press_space_match = re.search(r'\[Press SPACE to continue\]', trimmed_output)
+                if press_space_match:
+                    os.write(master_fd, b' ')
+                    return
+
+                quit_game_match = re.search(r'\[c\] read the credits or\[q\] quit the game\?Your choice:', trimmed_output)
+                if quit_game_match:
+                    os.write(master_fd, b'q')
+                    state['save_sequence'] = False
+                    return
+
         while adom_proc.poll() is None:
             r, w, e = select.select([master_fd, sys.stdin], [], [], SELECT_TIMEOUT)
             if master_fd in r:
@@ -126,11 +151,15 @@ def main():
 
             # If the timeout has happened and there is output, call the callback function and flush the buffer
             if time() - last_callback_time > TIMEOUT and output_buffer:
-                callback(output_buffer)
+                callback(output_buffer, state)
                 output_buffer = ""
                 last_callback_time = time()
+
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+        traceback.print_exc()
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
         os.close(master_fd)
