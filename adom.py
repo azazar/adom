@@ -224,13 +224,13 @@ def main():
                         "You feel younger!", "You suddenly remember your early youth", 
                         "You feel slightly strengthened", "Your wounds no longer bleed", 
                         "Your blood seems to cool down", "You suddenly are visible again",
-                        "No effect, as far as you notice", "You feel steady", 
+                        "No effect, as far as you notice", "You feel steady", "You feel relieved", 
 
                     ]
 
                     bad_messages = [
                         "The pool suddenly dries up.", "You taste bitter bile in your mouth", "You shiver",
-                        "You feel relieved", "You feel like an endangered species", "You become depressive",
+                        "You feel like an endangered species", "You become depressive",
                         "You continue the trip on the road to nowhere", "You feel elated", "You sweat",
                         "Your outfit suddenly looks much cleaner", "You suddenly can see yourself",
                         "You feel dizzy for some seconds", "Suddenly you are gone", "You feel translucent",
