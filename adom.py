@@ -32,10 +32,8 @@ def extract_game_name(file_path):
         game_name = file.read(12).split(b'\x00', 1)[0].decode('utf-8')  # Read the name and split by null terminator
     return game_name
 
-def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
-    """Display a menu of saved games and return the user's choice."""
-    print("Select a game to load:")
-
+def list_saved_games(backup_dir_base, saved_games_dir):
+    """List the saved games and their corresponding modification time."""
     mtime = dict()
 
     saved_games = [f for f in os.listdir(saved_games_dir) if os.path.isfile(os.path.join(saved_games_dir, f)) and f.endswith('.svg')]
@@ -50,6 +48,15 @@ def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
                 mtime[game] = os.path.getmtime(os.path.join(backup_dir_base, game))
 
     saved_games.sort(key=lambda x: mtime[x], reverse=True)
+
+    return saved_games
+
+
+def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
+    """Display a menu of saved games and return the user's choice."""
+    print("Select a game to load:")
+
+    saved_games = list_saved_games(backup_dir_base, saved_games_dir)
 
     for index, game in enumerate(saved_games, start=1):
         print(f"{index}. Load game: {game}")
