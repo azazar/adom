@@ -64,7 +64,7 @@ def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
     
     choice_str = input("Enter your choice: ")
     if choice_str == "":
-        choice = 1
+        choice = 1 if len(saved_games) > 0 else 0
     else:
         choice = int(choice_str)
 
