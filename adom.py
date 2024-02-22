@@ -96,16 +96,18 @@ def main():
             # Trim the entire string
             trimmed_output = stripped_output.strip()
             logging.info(f"Callback called with output: {ascii(trimmed_output)}")
+
             # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
             if trimmed_output.endswith("--- Play the Game --- Credits ---"):
                 os.write(master_fd, b'P')
-            # Extract exit key code and send it when the string starts with "--------------------------------- ADOM @ Steam ---------------------------------ADOM Deluxe is available at Steam" and ends with "-------------- [+-] Page up/down -- [*_] Line up/down -- [c] Exit -------------"
-            # Use a more concise regular expression to extract the exit key code
-            # Extract exit key code and send it when the string contains "-------------- [+-] Page up/down -- [*_] Line up/down -- [a] Exit -------------"
+                return
+
+            # Close the game ad on start
             exit_key_match = re.search(r'-+ \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -+', trimmed_output)
             if exit_key_match:
                 exit_key_code = exit_key_match.group(1)
                 os.write(master_fd, exit_key_code.encode())
+                return
 
         while adom_proc.poll() is None:
             r, w, e = select.select([master_fd, sys.stdin], [], [], SELECT_TIMEOUT)
