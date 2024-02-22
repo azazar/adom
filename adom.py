@@ -309,7 +309,9 @@ def main():
 
             # Backup the game file after quitting
             if game_name_to_load:
-                shutil.copyfile(os.path.join(saved_games_dir, game_filename), os.path.join(backup_dir_base, game_filename))
+                filepath = os.path.join(saved_games_dir, game_filename)
+                if os.path.isfile(filepath):
+                    shutil.copyfile(filepath, os.path.join(backup_dir_base, game_filename))
 
         except Exception as e:
             logging.error(f"An error occurred: {e}")
