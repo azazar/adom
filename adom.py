@@ -69,7 +69,7 @@ def display_menu_and_get_choice(backup_dir_base, saved_games_dir):
         choice = int(choice_str)
 
     if choice == 0:
-        return None
+        return None, None
 
     filename = saved_games[choice - 1]
     filepath = os.path.join(saved_games_dir, filename)
