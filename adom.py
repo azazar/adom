@@ -130,6 +130,7 @@ def main():
         'drinking_sequence': False,
         'restart': True,
         'error': False,
+        'drinking_infinite': False,
     }
 
     while state['restart']:
@@ -243,6 +244,16 @@ def main():
                         return
                 
                 # Message: "You see a red pool."
+                pool_match = re.search(r'You see a \S+ pool\.', trimmed_output)
+                if pool_match:
+                    if state['drinking_infinite']:
+                        logging.info("Sending 'D' key to drink from the pool")
+                        os.write(master_fd, b'D')
+                        return
+                    else:
+                        # Write at the top of the screen
+                        sys.stdout.write("\033[0;0HYou see a pool. \"D\" for drinking, F12 for infinite drinking. \r\n")
+                        sys.stdout.flush()
                 
                 # Message: "-Do you want to drink from the pool? [Y/n]"
                 drink_pool_match = re.search(r'-+Do you want to drink from the pool\? \[Y\/n\]', trimmed_output)
@@ -295,6 +306,7 @@ def main():
                         "You hear hissing sounds", "You suddenly hear many hissing sounds!", 
                         "You suddenly hear roaring waves!", "You feel very bad off.",
                         "You suddenly feel like jumping around", "You feel jumpy",  "You sense trouble",
+                        "Lots of vipers burst out of the pool."
                     ]
 
                     neutral_messages = [
@@ -327,7 +339,15 @@ def main():
                     for message in neutral_messages:
                         if message in trimmed_output:
                             state['drinking_sequence'] = False
+                            if state['drinking_infinite']:
+                                os.write(master_fd, b'D')
                             return
+                    
+                    if 'A small frog pops up. (more)' in trimmed_output or 'A small frog pops up.(more)' in trimmed_output:
+                        os.write(master_fd, b'    ')
+                        if state['drinking_infinite']:
+                            os.write(master_fd, b'D')
+                        return
 
                     if wish_message in trimmed_output:
                         state['drinking_sequence'] = False
@@ -344,7 +364,15 @@ def main():
                     sys.stdout.flush()
                 if sys.stdin in r:
                     input = os.read(sys.stdin.fileno(), 1024)
-                    os.write(master_fd, input)
+                    logging.info(f"Input: {ascii(input)}")
+                    if input == b'\x1b[24~':
+                        state['drinking_infinite'] = not state['drinking_infinite']
+                        if state['drinking_infinite']:
+                            sys.stdout.write(f"\033[0;0HInfinite drinking: {state['drinking_infinite']}\n")
+                            sys.stdout.flush()
+                            os.write(master_fd, b'D')
+                    else:
+                        os.write(master_fd, input)
 
                 # If the timeout has happened and there is output, call the callback function and flush the buffer
                 if time() - last_callback_time > TIMEOUT and output_buffer:
