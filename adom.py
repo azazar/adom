@@ -134,6 +134,7 @@ def main():
 
     while state['restart']:
         state['restart'] = False
+        state['start_sequence'] = True
 
         # Restore game file from backup if it's not in the saved games directory
         if game_name_to_load and game_filename not in os.listdir(saved_games_dir):
@@ -165,19 +166,21 @@ def main():
                 trimmed_output = stripped_output.strip()
                 logging.info(f"Callback called with output: {ascii(trimmed_output)}")
 
-                # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
-                if trimmed_output.endswith("--- Play the Game --- Credits ---"):
-                    logging.info("Sending 'P' key to start the game")
-                    os.write(master_fd, b'P')
-                    return
+                if state['start_sequence']:
+                    # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
+                    if trimmed_output.endswith("--- Play the Game --- Credits ---"):
+                        logging.info("Sending 'P' key to start the game")
+                        os.write(master_fd, b'P')
+                        return
 
-                # Close the game ad on start
-                exit_key_match = re.search(r'-+ \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -+', trimmed_output)
-                if exit_key_match:
-                    logging.info(f"Sending '{exit_key_match.group(1)}' key to close the ad on start")
-                    exit_key_code = exit_key_match.group(1)
-                    os.write(master_fd, exit_key_code.encode())
-                    return
+                    # Close the game ad on start
+                    exit_key_match = re.search(r'-+ \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -+', trimmed_output)
+                    if exit_key_match:
+                        logging.info(f"Sending '{exit_key_match.group(1)}' key to close the ad on start")
+                        exit_key_code = exit_key_match.group(1)
+                        os.write(master_fd, exit_key_code.encode())
+                        state['start_sequence'] = False
+                        return
 
                 # Start save game process
                 save_game_match = re.search(r'-+Really save the game\? \[y\/N\]', trimmed_output)
@@ -238,6 +241,8 @@ def main():
                         logging.info("Sending ' ' key to continue")
                         os.write(master_fd, b' ')
                         return
+                
+                # Message: "You see a red pool."
                 
                 # Message: "-Do you want to drink from the pool? [Y/n]"
                 drink_pool_match = re.search(r'-+Do you want to drink from the pool\? \[Y\/n\]', trimmed_output)
