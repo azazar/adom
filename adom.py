@@ -320,7 +320,7 @@ def main():
                     # Check if trimmed_output contains any of the bad messages
                     for message in bad_messages:
                         if message in trimmed_output:
-                            os.write(master_fd, b'\nQ')
+                            os.write(master_fd, b'\n\n\n\n\n\n\n\n\n\n\n\n\nQ')
                             state['drinking_sequence'] = False
                             state['quit_sequence'] = True
                             state['restart'] = True
