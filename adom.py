@@ -18,7 +18,7 @@ import traceback
 import curses
 
 # Configure logging with timestamp in the filename
-log_file_path = f'adom_log_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
+log_file_path = 'adom_log_{}.log'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 logging.basicConfig(filename=log_file_path, level=logging.DEBUG)
 
 def set_window_size(fd, rows, cols):
@@ -61,13 +61,13 @@ def curses_menu(win, backup_dir_base, saved_games_dir):
         win.addstr("Select a game to load:\n\n")
         for index, game in enumerate(saved_games):
             if index == current_selection:
-                win.addstr(f"{index + 1}. Load game: {game}\n", curses.A_REVERSE)
+                win.addstr("{} Load game: {}\n".format(index + 1, game), curses.A_REVERSE)
             else:
-                win.addstr(f"{index + 1}. Load game: {game}\n")
+                win.addstr("{} Load game: {}\n".format(index + 1, game))
         if current_selection == len(saved_games):
-            win.addstr(f"0. Start a new game\n", curses.A_REVERSE)
+            win.addstr("0. Start a new game\n", curses.A_REVERSE)
         else:
-            win.addstr(f"0. Start a new game\n")
+            win.addstr("0. Start a new game\n")
         win.refresh()
 
         key = win.getch()
@@ -165,7 +165,7 @@ def main():
                 stripped_output = ansi_escape.sub('', output)
                 # Trim the entire string
                 trimmed_output = stripped_output.strip()
-                logging.info(f"Callback called with output: {ascii(trimmed_output)}")
+                logging.info("Callback called with output: {}".format(ascii(trimmed_output)))
 
                 if state['start_sequence']:
                     # Send "P" keys when the string ends with "--- Play the Game --- Credits ---"
@@ -177,7 +177,7 @@ def main():
                     # Close the game ad on start
                     exit_key_match = re.search(r'-+ \[\+\-\] Page up/down -- \[\*\_\] Line up/down -- \[(\w)\] Exit -+', trimmed_output)
                     if exit_key_match:
-                        logging.info(f"Sending '{exit_key_match.group(1)}' key to close the ad on start")
+                        logging.info("Sending '{}' key to close the ad on start".format(exit_key_match.group(1)))
                         exit_key_code = exit_key_match.group(1)
                         os.write(master_fd, exit_key_code.encode())
                         state['start_sequence'] = False
@@ -364,11 +364,11 @@ def main():
                     sys.stdout.flush()
                 if sys.stdin in r:
                     input = os.read(sys.stdin.fileno(), 1024)
-                    logging.info(f"Input: {ascii(input)}")
+                    logging.info("Input: {}".format(ascii(input)))
                     if input == b'\x1b[24~':
                         state['drinking_infinite'] = not state['drinking_infinite']
                         if state['drinking_infinite']:
-                            sys.stdout.write(f"\033[0;0HInfinite drinking: {state['drinking_infinite']}\n")
+                            sys.stdout.write("\033[0;0HInfinite drinking: {}\n".format(state['drinking_infinite']))
                             sys.stdout.flush()
                             os.write(master_fd, b'D')
                     else:
@@ -387,7 +387,7 @@ def main():
                     shutil.copyfile(filepath, os.path.join(backup_dir_base, game_filename))
 
         except Exception as e:
-            logging.error(f"An error occurred: {e}")
+            logging.error("An error occurred: {}".format(e))
 
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
             traceback.print_exc()

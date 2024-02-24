@@ -1,6 +1,17 @@
 #!/bin/bash
 
-export ADOM_HOME=$(pwd)
-export ADOM_PATH=$(pwd)/run-adom
+tag=adom
 
-exec python3 adom.py
+podman images -f reference="$tag" || podman build -t $tag .
+
+mkdir -p .adom.data
+
+exec podman \
+    run \
+    --userns keep-id \
+    --rm \
+    -it \
+    -v ./.adom.data:/adom/.adom.data \
+    -v ./.adompy.data:/adom/.adompy.data \
+    $tag \
+    adom.py "$@"
