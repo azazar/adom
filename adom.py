@@ -75,7 +75,7 @@ def curses_menu(win, backup_dir_base, saved_games_dir):
             current_selection -= 1
         elif key == curses.KEY_DOWN and current_selection < len(saved_games):
             current_selection += 1
-        elif key in (curses.KEY_ENTER, ord('\n'), ord('\r')):
+        elif key in (curses.KEY_ENTER, ord('\n'), ord('\r'), ord('>')):
             break
         elif key == curses.KEY_EXIT or key == 27 or key == ord('q'):
             return False, False
